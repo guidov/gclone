@@ -1,0 +1,7 @@
+#!/bin/bash
+# /etc/systemd/system-sleep/gclone-resume
+# Restarts the gclone FUSE mount after the system resumes from
+# suspend or hibernate, because the mount goes stale while sleeping.
+case "$1" in
+  post) systemctl restart gclone ;;
+esac
