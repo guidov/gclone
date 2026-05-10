@@ -414,431 +414,418 @@ var indexHTML = `<!doctype html>
       --accent-soft: #d7ebe6;
       --warn: #8a5a00;
     }
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0;
       font-family: Georgia, "Times New Roman", serif;
-      background:
-        radial-gradient(circle at top left, #fef8ef 0, #f4efe8 42%, #eee5d9 100%);
+      background: radial-gradient(circle at top left, #fef8ef 0, #f4efe8 42%, #eee5d9 100%);
       color: var(--ink);
     }
-    main {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 32px 20px 80px;
-    }
-    h1 {
-      margin: 0 0 8px;
-      font-size: clamp(2rem, 4vw, 3.25rem);
-      line-height: 1;
-    }
-    .lede {
-      color: var(--muted);
-      max-width: 64ch;
-      margin-bottom: 24px;
-    }
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 20px;
-      box-shadow: 0 8px 30px rgba(60, 45, 20, 0.06);
-      margin-bottom: 18px;
-    }
-    .meta {
-      display: grid;
-      gap: 6px;
-      color: var(--muted);
-      font-size: 0.95rem;
-    }
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
+    main { max-width: 820px; margin: 0 auto; padding: 32px 20px 80px; }
+    h1 { font-size: clamp(1.8rem, 4vw, 3rem); margin-bottom: 6px; }
+    .lede { color: var(--muted); margin-bottom: 6px; }
+    .meta { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; }
+    code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.9em; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
     button {
-      border: 0;
-      border-radius: 999px;
-      padding: 12px 18px;
-      background: var(--accent);
-      color: white;
-      font: inherit;
-      cursor: pointer;
+      border: 0; border-radius: 999px; padding: 10px 20px;
+      background: var(--accent); color: white; font: inherit; cursor: pointer;
+      transition: opacity .15s;
     }
-    button.secondary {
-      background: #e9ddcf;
-      color: var(--ink);
-    }
-    button:disabled {
-      opacity: 0.6;
-      cursor: wait;
+    button.secondary { background: #e9ddcf; color: var(--ink); }
+    button:disabled { opacity: 0.45; cursor: wait; }
+    .search-box {
+      width: 100%; padding: 10px 16px;
+      border: 1px solid var(--line); border-radius: 999px;
+      background: #fffdf8; font: inherit; font-size: 1rem;
+      margin-bottom: 14px; display: block;
     }
     .warning {
-      background: #fff1cf;
-      color: var(--warn);
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 16px;
+      background: #fff1cf; color: var(--warn);
+      border-radius: 10px; padding: 10px 14px; margin-bottom: 12px;
     }
-    .folder {
-      border-top: 1px solid var(--line);
-      padding: 14px 0;
-    }
-    .folder:first-child {
-      border-top: 0;
-      padding-top: 0;
-    }
-    .folder-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    .folder-name {
-      font-weight: 700;
-      font-size: 1.05rem;
-    }
-    .folder-actions {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      color: var(--muted);
-    }
-    .children {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 8px 16px;
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: var(--accent-soft);
-    }
-    label {
-      display: inline-flex;
-      gap: 10px;
-      align-items: flex-start;
-    }
-    input[type="checkbox"] {
-      margin-top: 3px;
-      accent-color: var(--accent);
-    }
-    .status {
-      min-height: 1.5em;
-      color: var(--muted);
-    }
-    .search {
-      margin-bottom: 16px;
-    }
-    .search input {
-      width: 100%;
-      padding: 12px 14px;
+    .status { color: var(--muted); min-height: 1.4em; padding: 6px 0 10px; font-size: 0.95rem; }
+
+    /* ── Tree ── */
+    .tree {
       border: 1px solid var(--line);
-      border-radius: 999px;
-      background: #fffdf8;
-      font: inherit;
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--panel);
     }
-    code {
-      font-family: "SFMono-Regular", Consolas, monospace;
-      font-size: 0.92em;
+    .folder-item { border-bottom: 1px solid var(--line); }
+    .folder-item:last-child { border-bottom: 0; }
+
+    .folder-row {
+      display: flex; align-items: center; gap: 0;
+      padding: 10px 14px; background: var(--panel);
+      user-select: none;
     }
+    .expand-btn {
+      background: none; border: 0; border-radius: 6px;
+      width: 28px; height: 28px; flex-shrink: 0;
+      font-size: 0.75rem; cursor: pointer; color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      transition: background .12s;
+    }
+    .expand-btn:hover { background: var(--accent-soft); }
+
+    .folder-chk-wrap {
+      display: flex; align-items: center; gap: 10px; flex: 1; cursor: pointer;
+      padding: 2px 0;
+    }
+    .folder-chk-wrap input[type="checkbox"] {
+      width: 17px; height: 17px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer;
+    }
+    .folder-name-text { font-weight: 600; font-size: 1rem; }
+    .subfolder-badge {
+      font-size: 0.78rem; background: var(--accent-soft);
+      color: var(--accent); border-radius: 999px; padding: 1px 9px;
+    }
+
+    /* ── Subfolder panel ── */
+    .subfolders {
+      background: #f5f0ea;
+      border-top: 1px solid var(--line);
+      padding: 10px 14px 12px 46px;
+    }
+    .sub-actions { font-size: 0.82rem; margin-bottom: 8px; color: var(--muted); }
+    .sub-actions button {
+      background: none; color: var(--accent); padding: 0 2px;
+      font: inherit; font-size: 0.82rem; border-radius: 3px;
+      text-decoration: underline; display: inline;
+    }
+    .sub-actions button:hover { background: var(--accent-soft); }
+    .sub-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 2px 14px;
+    }
+    .sub-label {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 6px; border-radius: 6px; cursor: pointer; font-size: 0.95rem;
+    }
+    .sub-label:hover { background: var(--accent-soft); }
+    .sub-label input[type="checkbox"] {
+      width: 15px; height: 15px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer;
+    }
+    .sub-label.whole-active { opacity: 0.45; pointer-events: none; }
+    .sub-placeholder { color: var(--muted); font-size: 0.9rem; padding: 2px 0; }
   </style>
 </head>
 <body>
-  <main>
-    <h1>Selective Sync</h1>
-    <p class="lede">Choose which top-level folders and subfolders should appear in the mounted Drive view. Saving writes a filter file for the gclone mount. Restart the service after saving.</p>
+<main>
+  <h1>Selective Sync</h1>
+  <p class="lede">Check a folder to include it. Click the arrow to expand and pick individual subfolders instead.</p>
+  <p class="meta">Remote: <code id="remote"></code> &nbsp;&middot;&nbsp; Filter: <code id="filter-file"></code></p>
 
-    <section class="panel">
-      <div class="meta">
-        <div>Remote: <code id="remote"></code></div>
-        <div>Filter file: <code id="filter-file"></code></div>
-      </div>
-    </section>
+  <div class="toolbar">
+    <button id="save">Save Selection</button>
+    <button id="restart">Restart gclone</button>
+    <button id="show-all" class="secondary">Show Entire Drive</button>
+    <button id="reload" class="secondary">Reload</button>
+  </div>
 
-    <section class="panel">
-      <div class="toolbar">
-        <button id="save">Save Selection</button>
-        <button id="restart">Restart gclone</button>
-        <button id="show-all" class="secondary">Show Entire Drive</button>
-        <button id="reload" class="secondary">Reload</button>
-      </div>
-      <div class="search">
-        <input id="search" type="search" placeholder="Filter folders or subfolders">
-      </div>
-      <div id="warning" class="warning" hidden></div>
-      <div id="folders"></div>
-      <div id="restart-note" class="warning" hidden></div>
-      <p class="status" id="status"></p>
-    </section>
-  </main>
+  <input id="search" class="search-box" type="search" placeholder="Search folders&hellip;">
 
-  <script>
-    let state = null;
+  <div id="warning" class="warning" hidden></div>
+  <div id="restart-note" class="warning" hidden></div>
+  <p id="status" class="status"></p>
 
-    async function loadState() {
-      setStatus("Loading folders...");
-      const res = await fetch("/api/state");
-      if (!res.ok) {
-        throw new Error(await res.text());
+  <div id="tree" class="tree"></div>
+</main>
+
+<script>
+  let state = null;
+
+  async function loadState() {
+    setStatus("Loading folders…");
+    const res = await fetch("/api/state");
+    if (!res.ok) throw new Error(await res.text());
+    state = await res.json();
+    document.getElementById("remote").textContent = state.remote;
+    document.getElementById("filter-file").textContent = state.filterFile;
+    renderWarning();
+    renderRestartNote(false);
+    renderTree();
+    setStatus("Loaded " + state.tree.length + " top-level folder" + (state.tree.length !== 1 ? "s" : "") + ".");
+  }
+
+  function renderWarning() {
+    const el = document.getElementById("warning");
+    const rules = state.selection.unsupportedRules || [];
+    if (!rules.length) { el.hidden = true; return; }
+    el.hidden = false;
+    el.textContent = "Custom filter rules not managed by this GUI will be replaced on save: " + rules.join(" | ");
+  }
+
+  function renderTree() {
+    const root = document.getElementById("tree");
+    const q = document.getElementById("search").value.trim().toLowerCase();
+    root.innerHTML = "";
+
+    const visible = state.tree.filter(function(f) {
+      if (!q) return true;
+      if (f.name.toLowerCase().indexOf(q) !== -1) return true;
+      const subs = state.selection.selectedChildren[f.name] || [];
+      return subs.some(function(s) { return s.toLowerCase().indexOf(q) !== -1; });
+    });
+
+    if (!visible.length) {
+      root.innerHTML = '<div style="padding:18px;color:var(--muted)">No folders match.</div>';
+      return;
+    }
+    visible.forEach(function(f) { appendFolderItem(root, f.name, q); });
+  }
+
+  function appendFolderItem(root, name, q) {
+    const savedKids = new Set(state.selection.selectedChildren[name] || []);
+    const isWhole   = !!state.selection.wholeFolders[name];
+    const hasKids   = savedKids.size > 0;
+
+    /* wrapper */
+    const item = document.createElement("div");
+    item.className = "folder-item";
+
+    /* ── folder row ── */
+    const row = document.createElement("div");
+    row.className = "folder-row";
+
+    const expandBtn = document.createElement("button");
+    expandBtn.className = "expand-btn";
+    expandBtn.title = "Expand / collapse";
+    expandBtn.textContent = "▶";
+    expandBtn.setAttribute("aria-expanded", "false");
+    row.appendChild(expandBtn);
+
+    const chkWrap = document.createElement("label");
+    chkWrap.className = "folder-chk-wrap";
+
+    const chk = document.createElement("input");
+    chk.type = "checkbox";
+    chk.dataset.top  = name;
+    chk.dataset.kind = "whole";
+    chk.checked = isWhole;
+    chkWrap.appendChild(chk);
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "folder-name-text";
+    nameSpan.textContent = name;
+    chkWrap.appendChild(nameSpan);
+
+    if (hasKids && !isWhole) {
+      const badge = document.createElement("span");
+      badge.className = "subfolder-badge";
+      badge.textContent = savedKids.size + " subfolder" + (savedKids.size > 1 ? "s" : "");
+      chkWrap.appendChild(badge);
+    }
+    row.appendChild(chkWrap);
+    item.appendChild(row);
+
+    /* ── subfolder panel ── */
+    const panel = document.createElement("div");
+    panel.className = "subfolders";
+    panel.hidden = true;
+    panel.dataset.loaded = "false";
+    item.appendChild(panel);
+
+    root.appendChild(item);
+
+    /* expand / collapse */
+    function doExpand() {
+      if (!panel.hidden) {
+        panel.hidden = true;
+        expandBtn.textContent = "▶";
+        expandBtn.setAttribute("aria-expanded", "false");
+        return;
       }
-      state = await res.json();
-      document.getElementById("remote").textContent = state.remote;
-      document.getElementById("filter-file").textContent = state.filterFile;
-      renderWarning();
+      panel.hidden = false;
+      expandBtn.textContent = "▼";
+      expandBtn.setAttribute("aria-expanded", "true");
+      ensureSubsLoaded(name, panel, savedKids, chk, q);
+    }
+    expandBtn.addEventListener("click", doExpand);
+
+    /* whole-folder checkbox disables subfolder boxes */
+    chk.addEventListener("change", function() {
+      syncSubDisabled(panel, chk.checked);
+      refreshBadge(chkWrap, panel, chk);
+    });
+
+    /* auto-expand if there are saved subfolder selections */
+    if (hasKids) doExpand();
+  }
+
+  async function ensureSubsLoaded(name, panel, savedKids, wholeChk, q) {
+    if (panel.dataset.loaded === "true") {
+      applySubFilter(panel, q, name);
+      return;
+    }
+    panel.innerHTML = '<div class="sub-placeholder">Loading…</div>';
+    const res = await fetch("/api/children?top=" + encodeURIComponent(name));
+    if (!res.ok) {
+      panel.innerHTML = '<div class="sub-placeholder" style="color:red">' + esc(await res.text()) + '</div>';
+      return;
+    }
+    const data = await res.json();
+    panel.innerHTML = "";
+    panel.dataset.loaded = "true";
+
+    if (!data.children || !data.children.length) {
+      panel.innerHTML = '<div class="sub-placeholder">No subfolders.</div>';
+      return;
+    }
+
+    /* all / none links */
+    const actions = document.createElement("div");
+    actions.className = "sub-actions";
+    const allBtn  = document.createElement("button");
+    allBtn.className = "secondary";
+    allBtn.textContent = "all";
+    const noneBtn = document.createElement("button");
+    noneBtn.className = "secondary";
+    noneBtn.textContent = "none";
+    actions.append("Select: ", allBtn, " / ", noneBtn);
+    panel.appendChild(actions);
+
+    const grid = document.createElement("div");
+    grid.className = "sub-grid";
+    panel.appendChild(grid);
+
+    data.children.forEach(function(child) {
+      const lbl = document.createElement("label");
+      lbl.className = "sub-label" + (wholeChk.checked ? " whole-active" : "");
+      lbl.dataset.child = child.toLowerCase();
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.dataset.top   = name;
+      box.dataset.child = child;
+      box.checked  = savedKids.has(child);
+      box.disabled = wholeChk.checked;
+      lbl.appendChild(box);
+      lbl.append(child);
+      box.addEventListener("change", function() {
+        const chkWrap = panel.closest(".folder-item").querySelector(".folder-chk-wrap");
+        const parentChk = chkWrap.querySelector("input[data-kind='whole']");
+        refreshBadge(chkWrap, panel, parentChk);
+      });
+      grid.appendChild(lbl);
+    });
+
+    allBtn.addEventListener("click",  function() {
+      grid.querySelectorAll("input[type='checkbox']").forEach(function(b) { if (!b.disabled) b.checked = true; });
+      var chkWrap = panel.closest(".folder-item").querySelector(".folder-chk-wrap");
+      var parentChk = chkWrap.querySelector("input[data-kind='whole']");
+      refreshBadge(chkWrap, panel, parentChk);
+    });
+    noneBtn.addEventListener("click", function() {
+      grid.querySelectorAll("input[type='checkbox']").forEach(function(b) { b.checked = false; });
+      var chkWrap = panel.closest(".folder-item").querySelector(".folder-chk-wrap");
+      var parentChk = chkWrap.querySelector("input[data-kind='whole']");
+      refreshBadge(chkWrap, panel, parentChk);
+    });
+
+    applySubFilter(panel, q, name);
+  }
+
+  function syncSubDisabled(panel, disabled) {
+    panel.querySelectorAll(".sub-label").forEach(function(lbl) {
+      lbl.classList.toggle("whole-active", disabled);
+      lbl.querySelector("input").disabled = disabled;
+    });
+  }
+
+  function refreshBadge(chkWrap, panel, parentChk) {
+    var existing = chkWrap.querySelector(".subfolder-badge");
+    if (parentChk.checked) {
+      if (existing) existing.remove();
+      return;
+    }
+    var count = panel.querySelectorAll(".sub-label input:checked").length;
+    if (!count) { if (existing) existing.remove(); return; }
+    var badge = existing || document.createElement("span");
+    badge.className = "subfolder-badge";
+    badge.textContent = count + " subfolder" + (count > 1 ? "s" : "");
+    if (!existing) chkWrap.appendChild(badge);
+  }
+
+  function applySubFilter(panel, q, top) {
+    if (!q) {
+      panel.querySelectorAll(".sub-label").forEach(function(l) { l.hidden = false; });
+      return;
+    }
+    var topMatch = top.toLowerCase().indexOf(q) !== -1;
+    panel.querySelectorAll(".sub-label").forEach(function(l) {
+      l.hidden = !(topMatch || l.dataset.child.indexOf(q) !== -1);
+    });
+  }
+
+  function collectPayload(showAll) {
+    if (showAll) return { showAll: true, wholeFolders: {}, selectedChildren: {} };
+    var wholeFolders = {}, selectedChildren = {};
+    document.querySelectorAll("input[data-kind='whole']").forEach(function(chk) {
+      var top = chk.dataset.top;
+      if (chk.checked) { wholeFolders[top] = true; return; }
+      var kids = [];
+      document.querySelectorAll("input[data-top='" + cssEsc(top) + "'][data-child]").forEach(function(b) {
+        if (b.checked) kids.push(b.dataset.child);
+      });
+      if (kids.length) selectedChildren[top] = kids;
+    });
+    return { showAll: false, wholeFolders: wholeFolders, selectedChildren: selectedChildren };
+  }
+
+  async function save(showAll) {
+    var btn = document.getElementById("save");
+    btn.disabled = true;
+    try {
+      var res = await fetch("/api/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(collectPayload(showAll)),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      var data = await res.json();
+      renderRestartNote(true);
+      setStatus(data.message);
+      await loadState();
+      renderRestartNote(true);
+    } finally { btn.disabled = false; }
+  }
+
+  async function restartService() {
+    var btn = document.getElementById("restart");
+    btn.disabled = true;
+    try {
+      setStatus("Restarting gclone…");
+      var res = await fetch("/api/restart", { method: "POST" });
+      if (!res.ok) throw new Error(await res.text());
+      var data = await res.json();
       renderRestartNote(false);
-      renderFolders();
-      setStatus("Loaded.");
-    }
+      setStatus(data.message + (data.output ? " " + data.output : ""));
+    } finally { btn.disabled = false; }
+  }
 
-    function renderWarning() {
-      const el = document.getElementById("warning");
-      const rules = state.selection.unsupportedRules || [];
-      if (!rules.length) {
-        el.hidden = true;
-        el.textContent = "";
-        return;
-      }
-      el.hidden = false;
-      el.textContent = "The current filter file contains custom rules this GUI does not fully model. Saving will replace them: " + rules.join(" | ");
-    }
+  function renderRestartNote(show) {
+    var el = document.getElementById("restart-note");
+    if (!show) { el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = "Selection saved. Click <strong>Restart gclone</strong> to apply, or run: <code>" + esc(state.restartCommand) + "</code>";
+  }
 
-    function renderFolders() {
-      const root = document.getElementById("folders");
-      const query = document.getElementById("search").value.trim().toLowerCase();
-      root.innerHTML = "";
+  function setStatus(msg) { document.getElementById("status").textContent = msg; }
 
-      for (const folder of state.tree) {
-        const selectedChildren = new Set(state.selection.selectedChildren[folder.name] || []);
-        if (query && !folder.name.toLowerCase().includes(query)) {
-          let selectedChildMatches = false;
-          for (const child of selectedChildren) {
-            if (child.toLowerCase().includes(query)) {
-              selectedChildMatches = true;
-              break;
-            }
-          }
-          if (!selectedChildMatches) {
-            continue;
-          }
-        }
+  function esc(v) {
+    return String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+  }
+  function cssEsc(v) { return window.CSS && CSS.escape ? CSS.escape(v) : v.replaceAll('"', '\\"'); }
 
-        const wrapper = document.createElement("section");
-        wrapper.className = "folder";
+  document.getElementById("save").addEventListener("click",     function() { save(false).catch(function(e) { setStatus(e.message); }); });
+  document.getElementById("restart").addEventListener("click",  function() { restartService().catch(function(e) { setStatus(e.message); }); });
+  document.getElementById("show-all").addEventListener("click", function() { save(true).catch(function(e) { setStatus(e.message); }); });
+  document.getElementById("reload").addEventListener("click",   function() { loadState().catch(function(e) { setStatus(e.message); }); });
+  document.getElementById("search").addEventListener("input",   function() { renderTree(); });
 
-        const wholeChecked = !!state.selection.wholeFolders[folder.name];
-
-        const head = document.createElement("div");
-        head.className = "folder-head";
-        head.innerHTML =
-          '<div class="folder-name">' + escapeHtml(folder.name) + '</div>' +
-          '<div class="folder-actions">' +
-            '<button type="button" class="secondary" data-action="load" data-top="' + escapeAttr(folder.name) + '">Load subfolders</button>' +
-            '<button type="button" class="secondary" data-action="all" data-top="' + escapeAttr(folder.name) + '">Select all subfolders</button>' +
-            '<button type="button" class="secondary" data-action="none" data-top="' + escapeAttr(folder.name) + '">Clear subfolders</button>' +
-            '<label><input type="checkbox" data-top="' + escapeAttr(folder.name) + '" data-kind="whole"> Include entire folder</label>' +
-          '</div>';
-        wrapper.appendChild(head);
-
-        const wholeBox = head.querySelector('input[data-kind="whole"]');
-        wholeBox.checked = wholeChecked;
-        const loadButton = head.querySelector('button[data-action="load"]');
-        const allButton = head.querySelector('button[data-action="all"]');
-        const noneButton = head.querySelector('button[data-action="none"]');
-
-        const children = document.createElement("div");
-        children.className = "children";
-        children.dataset.loaded = "false";
-        children.dataset.top = folder.name;
-        children.innerHTML = "<div>Subfolders load on demand.</div>";
-
-        wholeBox.addEventListener("change", () => {
-          for (const box of children.querySelectorAll("input[type=checkbox]")) {
-            box.disabled = wholeBox.checked;
-          }
-          allButton.disabled = wholeBox.checked;
-          noneButton.disabled = wholeBox.checked;
-        });
-
-        loadButton.addEventListener("click", () => loadChildren(folder.name, children, selectedChildren, wholeBox));
-        allButton.addEventListener("click", async () => {
-          await loadChildren(folder.name, children, selectedChildren, wholeBox);
-          for (const box of children.querySelectorAll('input[data-child]')) {
-            if (!box.disabled) {
-              box.checked = true;
-            }
-          }
-          applyChildFilter(folder.name, children);
-        });
-        noneButton.addEventListener("click", async () => {
-          await loadChildren(folder.name, children, selectedChildren, wholeBox);
-          for (const box of children.querySelectorAll('input[data-child]')) {
-            box.checked = false;
-          }
-          applyChildFilter(folder.name, children);
-        });
-
-        if (selectedChildren.size > 0) {
-          loadChildren(folder.name, children, selectedChildren, wholeBox);
-        }
-
-        wrapper.appendChild(children);
-        root.appendChild(wrapper);
-      }
-    }
-
-    async function loadChildren(top, container, selectedChildren, wholeBox) {
-      if (container.dataset.loaded === "true") {
-        applyChildFilter(top, container);
-        return;
-      }
-      container.innerHTML = "<div>Loading subfolders...</div>";
-      const res = await fetch("/api/children?top=" + encodeURIComponent(top));
-      if (!res.ok) {
-        container.innerHTML = "<div>" + escapeHtml(await res.text()) + "</div>";
-        return;
-      }
-      const data = await res.json();
-      container.innerHTML = "";
-      container.dataset.loaded = "true";
-
-      if (!data.children.length) {
-        container.innerHTML = "<div>No subfolders found.</div>";
-        return;
-      }
-
-      for (const child of data.children) {
-        const row = document.createElement("label");
-        row.dataset.child = child.toLowerCase();
-        row.innerHTML = '<input type="checkbox" data-top="' + escapeAttr(top) + '" data-child="' + escapeAttr(child) + '"> ' + escapeHtml(child);
-        const box = row.querySelector("input");
-        box.checked = selectedChildren.has(child);
-        box.disabled = wholeBox.checked;
-        container.appendChild(row);
-      }
-      applyChildFilter(top, container);
-    }
-
-    function applyChildFilter(top, container) {
-      const query = document.getElementById("search").value.trim().toLowerCase();
-      if (!query) {
-        for (const row of container.querySelectorAll("label[data-child]")) {
-          row.hidden = false;
-        }
-        return;
-      }
-      const topMatches = top.toLowerCase().includes(query);
-      for (const row of container.querySelectorAll("label[data-child]")) {
-        row.hidden = !(topMatches || row.dataset.child.includes(query));
-      }
-    }
-
-    function collectPayload(showAll) {
-      if (showAll) {
-        return { showAll: true, wholeFolders: {}, selectedChildren: {} };
-      }
-
-      const wholeFolders = {};
-      const selectedChildren = {};
-
-      for (const wholeBox of document.querySelectorAll('input[data-kind="whole"]')) {
-        const top = wholeBox.dataset.top;
-        if (wholeBox.checked) {
-          wholeFolders[top] = true;
-          continue;
-        }
-
-        const children = [];
-        for (const childBox of document.querySelectorAll('input[data-top="' + cssEscape(top) + '"][data-child]')) {
-          if (childBox.checked) {
-            children.push(childBox.dataset.child);
-          }
-        }
-        if (children.length) {
-          selectedChildren[top] = children;
-        }
-      }
-
-      return { showAll: false, wholeFolders, selectedChildren };
-    }
-
-    async function save(showAll) {
-      const btn = document.getElementById("save");
-      btn.disabled = true;
-      try {
-        const res = await fetch("/api/save", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(collectPayload(showAll)),
-        });
-        if (!res.ok) {
-          throw new Error(await res.text());
-        }
-        const data = await res.json();
-        renderRestartNote(true);
-        setStatus(data.message);
-        await loadState();
-        renderRestartNote(true);
-      } finally {
-        btn.disabled = false;
-      }
-    }
-
-    async function restartService() {
-      const btn = document.getElementById("restart");
-      btn.disabled = true;
-      try {
-        setStatus("Restarting gclone...");
-        const res = await fetch("/api/restart", { method: "POST" });
-        if (!res.ok) {
-          throw new Error(await res.text());
-        }
-        const data = await res.json();
-        renderRestartNote(false);
-        setStatus(data.message + (data.output ? " " + data.output : ""));
-      } finally {
-        btn.disabled = false;
-      }
-    }
-
-    function renderRestartNote(show) {
-      const el = document.getElementById("restart-note");
-      if (!show) {
-        el.hidden = true;
-        el.textContent = "";
-        return;
-      }
-      el.hidden = false;
-      el.innerHTML = 'Selection saved. Restart the mount service to apply it: <code>' + escapeHtml(state.restartCommand) + '</code>';
-    }
-
-    function setStatus(message) {
-      document.getElementById("status").textContent = message;
-    }
-
-    function escapeHtml(value) {
-      return value
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;");
-    }
-
-    function escapeAttr(value) {
-      return escapeHtml(value).replaceAll("'", "&#39;");
-    }
-
-    function cssEscape(value) {
-      return window.CSS && CSS.escape ? CSS.escape(value) : value.replaceAll('"', '\\"');
-    }
-
-    document.getElementById("save").addEventListener("click", () => save(false));
-    document.getElementById("restart").addEventListener("click", () => restartService().catch(err => setStatus(err.message)));
-    document.getElementById("show-all").addEventListener("click", () => save(true));
-    document.getElementById("reload").addEventListener("click", () => loadState().catch(err => setStatus(err.message)));
-    document.getElementById("search").addEventListener("input", () => renderFolders());
-
-    loadState().catch(err => setStatus(err.message));
-  </script>
+  loadState().catch(function(e) { setStatus(e.message); });
+</script>
 </body>
 </html>`
