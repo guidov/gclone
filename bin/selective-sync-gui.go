@@ -510,6 +510,19 @@ var indexHTML = `<!doctype html>
     }
     .sub-label.whole-active { opacity: 0.45; pointer-events: none; }
     .sub-placeholder { color: var(--muted); font-size: 0.9rem; padding: 2px 0; }
+
+    /* ── Select-all header ── */
+    .tree-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: #eee8df;
+      border-bottom: 1px solid var(--line);
+      user-select: none;
+    }
+    .tree-header input[type="checkbox"] {
+      width: 17px; height: 17px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer;
+    }
+    .tree-header-label { font-size: 0.88rem; color: var(--muted); cursor: pointer; }
   </style>
 </head>
 <body>
@@ -574,7 +587,29 @@ var indexHTML = `<!doctype html>
       root.innerHTML = '<div style="padding:18px;color:var(--muted)">No folders match.</div>';
       return;
     }
+
+    const header = document.createElement("div");
+    header.className = "tree-header";
+    const selectAllChk = document.createElement("input");
+    selectAllChk.type = "checkbox";
+    selectAllChk.id = "select-all-chk";
+    const selectAllLbl = document.createElement("label");
+    selectAllLbl.htmlFor = "select-all-chk";
+    selectAllLbl.className = "tree-header-label";
+    selectAllLbl.textContent = "Select all folders";
+    header.appendChild(selectAllChk);
+    header.appendChild(selectAllLbl);
+    root.appendChild(header);
+
+    selectAllChk.addEventListener("change", function() {
+      document.querySelectorAll("input[data-kind='whole']").forEach(function(chk) {
+        chk.checked = selectAllChk.checked;
+        chk.dispatchEvent(new Event("change"));
+      });
+    });
+
     visible.forEach(function(f) { appendFolderItem(root, f.name, q); });
+    updateSelectAll();
   }
 
   function appendFolderItem(root, name, q) {
@@ -649,6 +684,7 @@ var indexHTML = `<!doctype html>
     chk.addEventListener("change", function() {
       syncSubDisabled(panel, chk.checked);
       refreshBadge(chkWrap, panel, chk);
+      updateSelectAll();
     });
 
     /* auto-expand if there are saved subfolder selections */
@@ -746,6 +782,16 @@ var indexHTML = `<!doctype html>
     badge.className = "subfolder-badge";
     badge.textContent = count + " subfolder" + (count > 1 ? "s" : "");
     if (!existing) chkWrap.appendChild(badge);
+  }
+
+  function updateSelectAll() {
+    var chk = document.getElementById("select-all-chk");
+    if (!chk) return;
+    var all = document.querySelectorAll("input[data-kind='whole']");
+    var checked = 0;
+    all.forEach(function(b) { if (b.checked) checked++; });
+    chk.indeterminate = checked > 0 && checked < all.length;
+    chk.checked = checked === all.length && all.length > 0;
   }
 
   function applySubFilter(panel, q, top) {
