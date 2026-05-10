@@ -16,3 +16,5 @@ fuzz-build.zip
 Thumbs.db
 __pycache__
 accounts/
+*.conf
+!config/rclone.conf.template
