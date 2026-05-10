@@ -10,7 +10,10 @@ Type=notify
 # Install both /usr/local/bin/gclone and /usr/local/bin/gclone-mount first.
 User=YOUR_USERNAME
 Group=YOUR_USERNAME
-ExecStart=/usr/local/bin/gclone-mount gc: /path/to/mountpoint
+# Create an empty filter file on first start so --filter-from does not error
+ExecStartPre=/bin/bash -c 'mkdir -p %h/.config/rclone && touch -a %h/.config/rclone/gclone-selective-sync.txt'
+ExecStart=/usr/local/bin/gclone-mount gc: /path/to/mountpoint \
+  --filter-from=%h/.config/rclone/gclone-selective-sync.txt
 
 # Ensure the mount point exists and is unmounted on stop
 ExecStop=-/bin/fusermount -uz /path/to/mountpoint
