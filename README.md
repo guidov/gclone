@@ -91,10 +91,13 @@ root_folder_id = root
 ```bash
 mkdir -p ~/gdrive
 sudo cp systemd/gclone.service /etc/systemd/system/gclone.service
+sudoedit /etc/systemd/system/gclone.service
 sudo systemctl daemon-reload
 sudo systemctl enable gclone
 sudo systemctl start gclone
 ```
+
+Set `User`, `Group`, and the mount point in the copied unit to match your machine before starting the service.
 
 Check status and logs:
 
