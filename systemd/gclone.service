@@ -6,22 +6,11 @@ Wants=network-online.target
 
 [Service]
 Type=notify
-# Adjust the username, binary path, and mount point before installing this unit.
+# Adjust the username and mount point before installing this unit.
+# Install both /usr/local/bin/gclone and /usr/local/bin/gclone-mount first.
 User=YOUR_USERNAME
 Group=YOUR_USERNAME
-ExecStart=/usr/local/bin/gclone mount gc: /path/to/mountpoint \
-  --config=%h/.config/rclone/rclone.conf \
-  --vfs-cache-mode full \
-  --vfs-cache-max-size 50G \
-  --vfs-read-chunk-size 64M \
-  --vfs-cache-max-age 24h \
-  --dir-cache-time 1000h \
-  --attr-timeout 1000h \
-  --drive-server-side-across-configs \
-  --buffer-size 32M \
-  --vfs-fast-fingerprint \
-  --log-level INFO \
-  --log-file %h/.config/rclone/gclone.log
+ExecStart=/usr/local/bin/gclone-mount gc: /path/to/mountpoint
 
 # Ensure the mount point exists and is unmounted on stop
 ExecStop=-/bin/fusermount -uz /path/to/mountpoint

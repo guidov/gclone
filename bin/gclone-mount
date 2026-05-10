@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 2 ]]; then
+  echo "Usage: gclone-mount REMOTE: MOUNTPOINT [extra gclone mount args...]" >&2
+  exit 2
+fi
+
+remote=$1
+mountpoint=$2
+shift 2
+
+gclone_bin=${GCLONE_BIN:-/usr/local/bin/gclone}
+config_file=${RCLONE_CONFIG:-"$HOME/.config/rclone/rclone.conf"}
+log_file=${GCLONE_LOG_FILE:-"$HOME/.config/rclone/gclone.log"}
+filter_file=${GCLONE_FILTER_FILE:-"$HOME/.config/rclone/gclone-selective-sync.txt"}
+
+args=(
+  mount "$remote" "$mountpoint"
+  --config="$config_file"
+  --vfs-cache-mode full
+  --vfs-cache-max-size 50G
+  --vfs-read-chunk-size 64M
+  --vfs-cache-max-age 24h
+  --dir-cache-time 1000h
+  --attr-timeout 1000h
+  --drive-server-side-across-configs
+  --buffer-size 32M
+  --vfs-fast-fingerprint
+  --log-level INFO
+  --log-file "$log_file"
+)
+
+if [[ -s "$filter_file" ]]; then
+  args+=(--filter-from "$filter_file")
+fi
+
+exec "$gclone_bin" "${args[@]}" "$@"

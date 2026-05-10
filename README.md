@@ -56,9 +56,9 @@ The script creates the accounts, downloads their JSON keys into `accounts/1.json
 ### 4. Place the JSON Key Files (manual setup only)
 
 ```bash
-mkdir -p /home/guido/gclone/accounts
+mkdir -p ~/gclone/accounts
 # Move downloaded JSON files there, renamed 1.json, 2.json, etc.
-mv ~/Downloads/*.json /home/guido/gclone/accounts/
+mv ~/Downloads/*.json ~/gclone/accounts/
 ```
 
 ### 5. Share Your Google Drive with the Service Accounts
@@ -66,7 +66,7 @@ mv ~/Downloads/*.json /home/guido/gclone/accounts/
 Each service account has an email like `sa1@your-project.iam.gserviceaccount.com`. Print them all with:
 
 ```bash
-for f in /home/guido/gclone/accounts/*.json; do
+for f in ~/gclone/accounts/*.json; do
     python3 -c "import json; d=json.load(open('$f')); print(d['client_email'])"
 done
 ```
@@ -81,8 +81,8 @@ Create `~/.config/rclone/rclone.conf` with:
 [gc]
 type = drive
 scope = drive
-service_account_file = /home/guido/gclone/accounts/1.json
-service_account_file_path = /home/guido/gclone/accounts/
+service_account_file = /path/to/gclone/accounts/1.json
+service_account_file_path = /path/to/gclone/accounts/
 root_folder_id = root
 ```
 
@@ -90,6 +90,8 @@ root_folder_id = root
 
 ```bash
 mkdir -p ~/gdrive
+sudo cp bin/gclone-mount /usr/local/bin/gclone-mount
+sudo chmod 755 /usr/local/bin/gclone-mount
 sudo cp systemd/gclone.service /etc/systemd/system/gclone.service
 sudoedit /etc/systemd/system/gclone.service
 sudo systemctl daemon-reload
@@ -105,6 +107,57 @@ Check status and logs:
 systemctl status gclone
 tail -f ~/.config/rclone/gclone.log
 ```
+
+### 8. Optional: Selective Sync
+
+You can make the mount behave more like Dropbox selective sync by showing only chosen folders.
+
+1. Copy the template:
+
+```bash
+cp config/gclone-selective-sync.txt.template ~/.config/rclone/gclone-selective-sync.txt
+```
+
+2. Edit `~/.config/rclone/gclone-selective-sync.txt` with `rclone` filter rules. Example:
+
+```text
++ /Research/**
++ /Teaching/**
+- *
+```
+
+3. Restart the service:
+
+```bash
+sudo systemctl restart gclone
+```
+
+When the filter file is absent or empty, the full remote is mounted. When it contains rules, only matching paths appear in the mount.
+
+### 9. Optional: Selective Sync GUI
+
+If you would rather click folders than edit filter rules, run the local web UI:
+
+```bash
+chmod +x bin/gclone-selective-sync-ui
+./bin/gclone-selective-sync-ui --mountpoint /path/to/mountpoint
+```
+
+Then open `http://127.0.0.1:43123`.
+
+The UI:
+
+- lists top-level folders in the remote
+- lets you include an entire top-level folder or only selected subfolders
+- writes `~/.config/rclone/gclone-selective-sync.txt`
+
+After saving, apply the new selection with:
+
+```bash
+sudo systemctl restart gclone
+```
+
+On large Drives, `--mountpoint` is the recommended mode because the GUI can discover folders directly from the mounted filesystem instead of repeatedly querying the Drive API by path.
 
 ## Instructions
 

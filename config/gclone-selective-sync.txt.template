@@ -1,0 +1,12 @@
+# Optional selective sync rules for gclone-mount.
+# If this file is absent or empty, the entire remote is visible.
+#
+# Rules use rclone filter syntax. The first matching rule wins.
+# Common pattern: include a few top-level folders, then exclude everything else.
+#
+# Example:
+# + /Research/**
+# + /Teaching/**
+# + /Admin/**
+# - *
+

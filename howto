@@ -11,21 +11,36 @@ Quick Setup
    2     type = drive
    3     scope = drive
    4     # Path to one JSON file (required as base)
-   5     service_account_file = /home/guido/gclone/accounts/1.json
+   5     service_account_file = /path/to/gclone/accounts/1.json
    6     # Folder with ALL your JSON files (gclone will rotate these)
-   7     service_account_file_path = /home/guido/gclone/accounts/
+   7     service_account_file_path = /path/to/gclone/accounts/
    8     root_folder_id = root
-      Make sure to put your .json service account files in /home/guido/gclone/accounts/.
+      Make sure to put your .json service account files in your chosen accounts directory.
 
    3. Systemd Service:
       I've already created the service file at systemd/gclone.service. Activate it now:
 
    1     mkdir -p ~/gdrive
-   2     sudo cp systemd/gclone.service /etc/systemd/system/gclone.service
-   3     # Open it to double check paths: sudo nano /etc/systemd/system/gclone.service
-   4     sudo systemctl daemon-reload
-   5     sudo systemctl enable gclone
-   6     sudo systemctl start gclone
+   2     sudo cp bin/gclone-mount /usr/local/bin/gclone-mount
+   3     sudo cp systemd/gclone.service /etc/systemd/system/gclone.service
+   4     # Open it to double check paths: sudo nano /etc/systemd/system/gclone.service
+   5     sudo systemctl daemon-reload
+   6     sudo systemctl enable gclone
+   7     sudo systemctl start gclone
+
+  Optional selective sync:
+   1     cp config/gclone-selective-sync.txt.template ~/.config/rclone/gclone-selective-sync.txt
+   2     # Example contents:
+   3     # + /Research/**
+   4     # + /Teaching/**
+   5     # - *
+   6     sudo systemctl restart gclone
+
+  Optional selective sync GUI:
+   1     chmod +x bin/gclone-selective-sync-ui
+   2     ./bin/gclone-selective-sync-ui --mountpoint /path/to/your/mount
+   3     # Open http://127.0.0.1:43123 and save your folder selection
+   4     sudo systemctl restart gclone
 
   Key Features of your new "Dropbox":
    * Infinite Upload: Automatically bypasses the 750GB/day limit by rotating service accounts.
@@ -34,5 +49,3 @@ Quick Setup
    * Auto-Start: Always available on boot via systemd.
 
   You can check the status at any time with systemctl status gclone or view logs with tail -f ~/.config/rclone/gclone.log.
-
-

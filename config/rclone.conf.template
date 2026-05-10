@@ -2,10 +2,10 @@
 type = drive
 scope = drive
 # Path to a single service account file (used as a fallback)
-service_account_file = /home/guido/gclone/accounts/1.json
+service_account_file = /path/to/gclone/accounts/1.json
 # Path to the folder containing multiple service account files (.json)
 # gclone will rotate these when hitting the 750GB limit
-service_account_file_path = /home/guido/gclone/accounts/
+service_account_file_path = /path/to/gclone/accounts/
 root_folder_id = root
 # Optional: Use a specific Team Drive/Shared Drive ID
 # team_drive = YOUR_TEAM_DRIVE_ID
