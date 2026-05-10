@@ -1,0 +1,38 @@
+Quick Setup
+
+   1. Move Binary:
+
+   1     sudo mv gclone /usr/local/bin/
+
+   2. Configuration:
+      Create ~/.config/rclone/rclone.conf with this content:
+
+   1     [gc]
+   2     type = drive
+   3     scope = drive
+   4     # Path to one JSON file (required as base)
+   5     service_account_file = /home/guido/gclone/accounts/1.json
+   6     # Folder with ALL your JSON files (gclone will rotate these)
+   7     service_account_file_path = /home/guido/gclone/accounts/
+   8     root_folder_id = root
+      Make sure to put your .json service account files in /home/guido/gclone/accounts/.
+
+   3. Systemd Service:
+      I've already created the service file at systemd/gclone.service. Activate it now:
+
+   1     mkdir -p ~/gdrive
+   2     sudo cp systemd/gclone.service /etc/systemd/system/gclone.service
+   3     # Open it to double check paths: sudo nano /etc/systemd/system/gclone.service
+   4     sudo systemctl daemon-reload
+   5     sudo systemctl enable gclone
+   6     sudo systemctl start gclone
+
+  Key Features of your new "Dropbox":
+   * Infinite Upload: Automatically bypasses the 750GB/day limit by rotating service accounts.
+   * On-Demand Sync: Files only download when you click them, saving local space.
+   * Background Upload: Changes you save are uploaded in the background via the VFS cache.
+   * Auto-Start: Always available on boot via systemd.
+
+  You can check the status at any time with systemctl status gclone or view logs with tail -f ~/.config/rclone/gclone.log.
+
+

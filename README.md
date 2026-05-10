@@ -8,6 +8,101 @@ Gclone *(a modified version of the [rclone](https://github.com/rclone/rclone))* 
 - Provides dynamic replacement of the Service Accounts (SAs) for bypassing the 750GB/day limit of Google Drive
 
 
+## Setup
+
+### 1. Create a Google Cloud Project
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Click the project dropdown at the top → **New Project** → give it a name (e.g. `gclone-sync`) → **Create**
+
+### 2. Enable the Google Drive API
+
+1. In your project, go to **APIs & Services → Library**
+2. Search for "Google Drive API" → click it → **Enable**
+
+### 3. Create Service Accounts
+
+You can do this manually via the web UI, or automatically using the provided script (recommended).
+
+**Option A — Automated (gcloud CLI)**
+
+Make sure you're logged in and have a project set:
+
+```bash
+gcloud auth login
+gcloud config set project YOUR_PROJECT_ID
+```
+
+Then run:
+
+```bash
+# Create 5 service accounts (adjust the number as needed)
+./bin/create_service_accounts.sh 5
+
+# Or specify the project explicitly
+./bin/create_service_accounts.sh 5 my-project-id
+```
+
+The script creates the accounts, downloads their JSON keys into `accounts/1.json`, `accounts/2.json`, etc., and prints all their emails at the end. It is safe to re-run — existing accounts and keys are skipped.
+
+**Option B — Manual (web UI)**
+
+1. Go to **APIs & Services → Credentials**
+2. Click **+ Create Credentials → Service Account**
+3. Give it a name (e.g. `sa1`) → **Create and Continue** → skip role → **Done**
+4. Click the service account → **Keys** tab → **Add Key → Create new key → JSON** → download the file
+5. Repeat to create multiple service accounts (e.g. 5–10) — more accounts means more rotation and higher throughput
+
+### 4. Place the JSON Key Files (manual setup only)
+
+```bash
+mkdir -p /home/guido/gclone/accounts
+# Move downloaded JSON files there, renamed 1.json, 2.json, etc.
+mv ~/Downloads/*.json /home/guido/gclone/accounts/
+```
+
+### 5. Share Your Google Drive with the Service Accounts
+
+Each service account has an email like `sa1@your-project.iam.gserviceaccount.com`. Print them all with:
+
+```bash
+for f in /home/guido/gclone/accounts/*.json; do
+    python3 -c "import json; d=json.load(open('$f')); print(d['client_email'])"
+done
+```
+
+Then in Google Drive, share your root folder (or Shared Drive) with each email, granting **Editor** access.
+
+### 6. Configure rclone
+
+Create `~/.config/rclone/rclone.conf` with:
+
+```ini
+[gc]
+type = drive
+scope = drive
+service_account_file = /home/guido/gclone/accounts/1.json
+service_account_file_path = /home/guido/gclone/accounts/
+root_folder_id = root
+```
+
+### 7. Install the systemd Service
+
+```bash
+mkdir -p ~/gdrive
+sudo cp systemd/gclone.service /etc/systemd/system/gclone.service
+sudo systemctl daemon-reload
+sudo systemctl enable gclone
+sudo systemctl start gclone
+```
+
+Check status and logs:
+
+```bash
+systemctl status gclone
+tail -f ~/.config/rclone/gclone.log
+```
+
 ## Instructions
 
 ### 1. Configuring the service_account_file_path

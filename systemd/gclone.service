@@ -1,0 +1,31 @@
+[Unit]
+Description=gclone Mount for Google Drive (Dropbox Replacement)
+Documentation=https://github.com/l3v11/gclone
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+# Adjust the binary path if gclone is elsewhere
+# Adjust the mount point (/home/guido/gdrive) to your preference
+ExecStart=/usr/local/bin/gclone mount gc: /home/guido/gdrive \
+  --config=/home/guido/.config/rclone/rclone.conf \
+  --vfs-cache-mode full \
+  --vfs-cache-max-size 50G \
+  --vfs-read-chunk-size 64M \
+  --vfs-cache-max-age 24h \
+  --dir-cache-time 1000h \
+  --attr-timeout 1000h \
+  --drive-server-side-across-configs \
+  --buffer-size 32M \
+  --vfs-fast-fingerprint \
+  --log-level INFO \
+  --log-file /home/guido/.config/rclone/gclone.log
+
+# Ensure the mount point exists and is unmounted on stop
+ExecStop=/bin/fusermount -uz /home/guido/gdrive
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
