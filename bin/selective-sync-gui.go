@@ -602,8 +602,9 @@ var indexHTML = `<!doctype html>
     root.appendChild(header);
 
     selectAllChk.addEventListener("change", function() {
+      var target = selectAllChk.checked;
       document.querySelectorAll("input[data-kind='whole']").forEach(function(chk) {
-        chk.checked = selectAllChk.checked;
+        chk.checked = target;
         chk.dispatchEvent(new Event("change"));
       });
     });
