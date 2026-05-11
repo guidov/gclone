@@ -226,6 +226,64 @@ tail -f ~/.config/rclone/gclone.log
 --gclone-bin      Path to the gclone binary (default /usr/local/bin/gclone)
 ```
 
+### 11. Optional: Download Selected Folders to Disk (Local Backup)
+
+The FUSE mount is **on-demand** — files are fetched only when opened. If you want a real local copy of your selected folders (like Dropbox's "synced" mode), use the backup script:
+
+```bash
+chmod +x bin/gclone-backup
+./bin/gclone-backup /path/to/local/backup
+```
+
+It reads the same filter file as the mount, so whatever is checked in the selective sync GUI is what gets downloaded.
+
+**Dry run first** to see what would be transferred before committing:
+
+```bash
+./bin/gclone-backup /path/to/local/backup --dry-run
+```
+
+The script uses `gclone sync`, which means:
+- New and changed files on Drive are downloaded
+- Local files deleted from Drive are removed from the local copy
+- Files on Drive not in your selection are never touched
+
+**Run on a schedule with systemd**
+
+Create `/etc/systemd/system/gclone-backup.service`:
+
+```ini
+[Unit]
+Description=gclone local backup
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=YOUR_USERNAME
+ExecStart=/home/YOUR_USERNAME/gclone/bin/gclone-backup /path/to/local/backup
+```
+
+And a timer `/etc/systemd/system/gclone-backup.timer`:
+
+```ini
+[Unit]
+Description=Run gclone backup nightly
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable it:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now gclone-backup.timer
+```
+
 ## Instructions
 
 ### 1. Configuring the service_account_file_path

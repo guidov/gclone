@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# gclone-backup — mirror all selective-sync folders to a local directory.
+# Uses the same filter file as the gclone FUSE mount so what you see in
+# the mount is exactly what gets downloaded to disk.
+#
+# Usage:
+#   gclone-backup <destination>           # sync Drive → local
+#   gclone-backup <destination> --dry-run # show what would change
+#
+# Overridable environment variables:
+#   GCLONE_REMOTE      rclone remote  (default: gc:)
+#   GCLONE_CONFIG      rclone config  (default: ~/.config/rclone/rclone.conf)
+#   GCLONE_FILTER_FILE filter file    (default: ~/.config/rclone/gclone-selective-sync.txt)
+#   GCLONE_BIN         gclone binary  (default: /usr/local/bin/gclone)
+#   GCLONE_TRANSFERS   parallel transfers (default: 4)
+
+set -euo pipefail
+
+REMOTE="${GCLONE_REMOTE:-gc:}"
+CONFIG="${GCLONE_CONFIG:-$HOME/.config/rclone/rclone.conf}"
+FILTER_FILE="${GCLONE_FILTER_FILE:-$HOME/.config/rclone/gclone-selective-sync.txt}"
+GCLONE_BIN="${GCLONE_BIN:-/usr/local/bin/gclone}"
+TRANSFERS="${GCLONE_TRANSFERS:-4}"
+
+usage() {
+  sed -n 's/^# //p' "$0" | head -12
+  exit 1
+}
+
+[[ $# -lt 1 ]] && usage
+
+DEST="$1"; shift
+DRY_RUN=0
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=1 ;;
+    *) echo "Unknown option: $arg"; usage ;;
+  esac
+done
+
+# Warn if filter file is missing or empty (would sync entire 1.7 TB Drive)
+if [[ ! -s "$FILTER_FILE" ]]; then
+  echo "WARNING: $FILTER_FILE is empty or missing."
+  echo "This will sync your entire Google Drive. Continue? [y/N]"
+  read -r ans
+  [[ "$ans" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
+fi
+
+mkdir -p "$DEST"
+
+ARGS=(
+  sync "$REMOTE" "$DEST"
+  --config "$CONFIG"
+  --filter-from "$FILTER_FILE"
+  --progress
+  --stats 10s
+  --transfers "$TRANSFERS"
+  --checkers 8
+  --drive-server-side-across-configs
+  --log-level INFO
+)
+
+if [[ $DRY_RUN -eq 1 ]]; then
+  ARGS+=(--dry-run)
+  echo "=== DRY RUN — nothing will be written ==="
+fi
+
+echo "Remote : $REMOTE"
+echo "Filter : $FILTER_FILE"
+echo "Dest   : $DEST"
+echo ""
+
+exec "$GCLONE_BIN" "${ARGS[@]}"
