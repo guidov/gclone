@@ -46,6 +46,13 @@ type restartResponse struct {
 	Output  string `json:"output,omitempty"`
 }
 
+type serviceStatus struct {
+	Active     string `json:"active"`     // "active", "inactive", "failed", "unknown"
+	StatusText string `json:"statusText"` // raw sd_notify STATUS= line from gclone
+	Label      string `json:"label"`      // human-friendly summary
+}
+
+
 type app struct {
 	gcloneBin  string
 	configFile string
@@ -85,6 +92,7 @@ func main() {
 	mux.HandleFunc("/api/children", app.handleChildren)
 	mux.HandleFunc("/api/save", app.handleSave)
 	mux.HandleFunc("/api/restart", app.handleRestart)
+	mux.HandleFunc("/api/status", app.handleStatus)
 
 	server := &http.Server{
 		Addr:              *addr,
@@ -176,6 +184,88 @@ func (a *app) handleRestart(w http.ResponseWriter, r *http.Request) {
 		Message: "gclone restart completed.",
 		Output:  result,
 	})
+}
+
+func (a *app) handleStatus(w http.ResponseWriter, r *http.Request) {
+	st := queryServiceStatus()
+	writeJSON(w, st)
+}
+
+func queryServiceStatus() serviceStatus {
+	// systemctl show gives machine-readable key=value output
+	out, err := exec.Command("systemctl", "show", "gclone",
+		"--property=ActiveState,StatusText").Output()
+	if err != nil {
+		return serviceStatus{Active: "unknown", Label: "Service status unavailable"}
+	}
+
+	active := ""
+	statusText := ""
+	for _, line := range strings.Split(string(out), "\n") {
+		if k, v, ok := strings.Cut(line, "="); ok {
+			switch k {
+			case "ActiveState":
+				active = v
+			case "StatusText":
+				statusText = v
+			}
+		}
+	}
+
+	label := summariseStatus(active, statusText)
+	return serviceStatus{Active: active, StatusText: statusText, Label: label}
+}
+
+// summariseStatus turns the raw systemd/gclone status into a short human label.
+// gclone emits lines like: "[09:31] vfs cache: objects 5 (was 3) in use 2, to upload 0, uploading 1, total size 142M"
+func summariseStatus(active, text string) string {
+	if active != "active" {
+		if active == "" {
+			return "Unknown"
+		}
+		return strings.ToUpper(active[:1]) + active[1:]
+	}
+
+	// Parse the vfs cache fields gclone reports via sd_notify
+	inUse := extractInt(text, "in use")
+	uploading := extractInt(text, "uploading")
+	toUpload := extractInt(text, "to upload")
+
+	switch {
+	case uploading > 0:
+		return fmt.Sprintf("Uploading %d file(s)", uploading)
+	case toUpload > 0:
+		return fmt.Sprintf("Pending upload: %d file(s)", toUpload)
+	case inUse > 0:
+		return fmt.Sprintf("Downloading / reading %d file(s)", inUse)
+	case text != "":
+		return "Up to date"
+	default:
+		return "Running"
+	}
+}
+
+// extractInt finds the integer following a label like "in use" in s.
+func extractInt(s, label string) int {
+	idx := strings.Index(s, label)
+	if idx < 0 {
+		return 0
+	}
+	// walk back to find the number before the label
+	i := idx - 1
+	for i >= 0 && s[i] == ' ' {
+		i--
+	}
+	end := i + 1
+	for i >= 0 && s[i] >= '0' && s[i] <= '9' {
+		i--
+	}
+	if end <= i+1 {
+		return 0
+	}
+	n := 0
+	fmt.Sscanf(s[i+1:end], "%d", &n)
+	return n
 }
 
 func (a *app) loadTree() ([]folderNode, error) {
@@ -518,6 +608,26 @@ var indexHTML = `<!doctype html>
     .sub-label.whole-active { opacity: 0.45; pointer-events: none; }
     .sub-placeholder { color: var(--muted); font-size: 0.9rem; padding: 2px 0; }
 
+    /* ── Service status pill ── */
+    .svc-status {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 0.85rem; padding: 5px 13px;
+      border-radius: 999px; margin-bottom: 14px;
+      border: 1px solid var(--line); background: var(--panel);
+      color: var(--muted);
+    }
+    .svc-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      background: var(--muted);
+    }
+    .svc-status.active   { border-color: #b6d9c8; background: #eaf5ef; color: #1a5c40; }
+    .svc-status.active .svc-dot { background: #2d9e6b; }
+    .svc-status.busy     { border-color: #c8d6e8; background: #eaf0fa; color: #1a3a6b; }
+    .svc-status.busy .svc-dot { background: #3a6fd8; animation: pulse 1s infinite; }
+    .svc-status.failed   { border-color: #e8c0b6; background: #faeaea; color: #7a1a1a; }
+    .svc-status.failed .svc-dot { background: #cc3333; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
     /* ── Select-all header ── */
     .tree-header {
       display: flex; align-items: center; gap: 10px;
@@ -544,6 +654,8 @@ var indexHTML = `<!doctype html>
     <button id="show-all" class="secondary">Show Entire Drive</button>
     <button id="reload" class="secondary">Reload</button>
   </div>
+
+  <div id="svc-status" class="svc-status"><span class="svc-dot"></span><span id="svc-label">Checking…</span></div>
 
   <input id="search" class="search-box" type="search" placeholder="Search folders&hellip;">
 
@@ -880,6 +992,26 @@ var indexHTML = `<!doctype html>
   document.getElementById("search").addEventListener("input",   function() { renderTree(); });
 
   loadState().catch(function(e) { setStatus(e.message); });
+
+  async function pollServiceStatus() {
+    try {
+      var res = await fetch("/api/status");
+      if (!res.ok) return;
+      var d = await res.json();
+      var pill = document.getElementById("svc-status");
+      var lbl  = document.getElementById("svc-label");
+      lbl.textContent = d.label;
+      pill.className = "svc-status";
+      if (d.active === "active") {
+        var busy = d.label.indexOf("Downloading") !== -1 || d.label.indexOf("Uploading") !== -1 || d.label.indexOf("Pending") !== -1;
+        pill.classList.add(busy ? "busy" : "active");
+      } else if (d.active === "failed" || d.active === "inactive") {
+        pill.classList.add("failed");
+      }
+    } catch(_) {}
+  }
+  pollServiceStatus();
+  setInterval(pollServiceStatus, 4000);
 </script>
 </body>
 </html>`
