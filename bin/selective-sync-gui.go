@@ -281,7 +281,7 @@ func (a *app) loadSelection() (selectionState, error) {
 			continue
 		}
 		nonCommentRules++
-		if line == "- *" {
+		if line == "- *" || line == "+ /*" {
 			continue
 		}
 		if !strings.HasPrefix(line, "+ /") {
@@ -370,7 +370,7 @@ func (a *app) saveSelection(req saveRequest) error {
 		}
 	}
 
-	rules = append(rules, "- *", "")
+	rules = append(rules, "+ /*", "- *", "")
 	return os.WriteFile(a.filterFile, []byte(strings.Join(rules, "\n")), 0o644)
 }
 
