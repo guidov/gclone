@@ -153,6 +153,7 @@ func (a *app) handleRestart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "restart command is not configured", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("restart: running %s", strings.Join(a.restartCmd, " "))
 	cmd := exec.Command(a.restartCmd[0], a.restartCmd[1:]...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -162,12 +163,18 @@ func (a *app) handleRestart(w http.ResponseWriter, r *http.Request) {
 		} else {
 			msg += "\n" + err.Error()
 		}
+		log.Printf("restart: FAILED: %s", msg)
 		http.Error(w, msg, http.StatusBadGateway)
 		return
 	}
+	result := strings.TrimSpace(string(out))
+	if result != "" {
+		log.Printf("restart: %s", result)
+	}
+	log.Printf("restart: done")
 	writeJSON(w, restartResponse{
 		Message: "gclone restart completed.",
-		Output:  strings.TrimSpace(string(out)),
+		Output:  result,
 	})
 }
 
