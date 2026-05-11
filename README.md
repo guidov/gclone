@@ -89,17 +89,33 @@ root_folder_id = root
 ### 7. Install the systemd Service
 
 ```bash
-mkdir -p ~/gdrive
 sudo cp bin/gclone-mount /usr/local/bin/gclone-mount
 sudo chmod 755 /usr/local/bin/gclone-mount
 sudo cp systemd/gclone.service /etc/systemd/system/gclone.service
+```
+
+Open the copied unit and set `User`, `Group`, the mount point, and your config/log paths:
+
+```bash
 sudoedit /etc/systemd/system/gclone.service
+```
+
+The service template includes two lines that wire up selective sync — keep them:
+
+```ini
+# Ensures the filter file exists before gclone starts (empty = show everything)
+ExecStartPre=/bin/bash -c 'mkdir -p %h/.config/rclone && touch -a %h/.config/rclone/gclone-selective-sync.txt'
+# Passes the filter file to gclone on every start
+ExecStart=... --filter-from=%h/.config/rclone/gclone-selective-sync.txt ...
+```
+
+Enable and start:
+
+```bash
 sudo systemctl daemon-reload
 sudo systemctl enable gclone
 sudo systemctl start gclone
 ```
-
-Set `User`, `Group`, and the mount point in the copied unit to match your machine before starting the service.
 
 Check status and logs:
 
@@ -108,35 +124,51 @@ systemctl status gclone
 tail -f ~/.config/rclone/gclone.log
 ```
 
-### 8. Optional: Selective Sync
+### 8. Optional: Auto-restart after Suspend / Hibernate
 
-You can make the mount behave more like Dropbox selective sync by showing only chosen folders.
-
-1. Copy the template:
+When the system resumes from sleep the FUSE mount goes stale. A systemd-sleep hook restarts it automatically:
 
 ```bash
-cp config/gclone-selective-sync.txt.template ~/.config/rclone/gclone-selective-sync.txt
+sudo mkdir -p /etc/systemd/system-sleep
+sudo cp systemd/gclone-resume /etc/systemd/system-sleep/gclone-resume
+sudo chmod +x /etc/systemd/system-sleep/gclone-resume
 ```
 
-2. Edit `~/.config/rclone/gclone-selective-sync.txt` with `rclone` filter rules. Example:
+No daemon-reload is needed — systemd-sleep hooks are plain shell scripts. On resume, systemd calls the script with `post <sleep-type>`, which triggers `systemctl restart gclone`.
+
+### 9. Optional: Selective Sync
+
+The mount can be configured to show only chosen folders, exactly like Dropbox selective sync. The filter is an rclone filter file at:
+
+```
+~/.config/rclone/gclone-selective-sync.txt
+```
+
+When the file is **empty or absent** the full Drive is mounted. When it contains rules, only matching paths appear. Files sitting loose at the Drive root (not inside any folder) are always included automatically via a `+ /*` rule.
+
+Example filter file for two folders plus loose root files:
 
 ```text
+# Managed by selective-sync-gui
 + /Research/**
 + /Teaching/**
++ /Teaching/
++ /Teaching/2024/**
++ /*
 - *
 ```
 
-3. Restart the service:
+Edit the file directly, or use the GUI (recommended — see below). After any change:
 
 ```bash
 sudo systemctl restart gclone
 ```
 
-When the filter file is absent or empty, the full remote is mounted. When it contains rules, only matching paths appear in the mount.
+### 10. Optional: Selective Sync GUI
 
-### 9. Optional: Selective Sync GUI
+A browser-based UI lets you choose folders with checkboxes instead of editing filter rules by hand.
 
-If you would rather click folders than edit filter rules, run the local web UI:
+**Start the UI**
 
 ```bash
 chmod +x bin/gclone-selective-sync-ui
@@ -145,19 +177,54 @@ chmod +x bin/gclone-selective-sync-ui
 
 Then open `http://127.0.0.1:43123`.
 
-The UI:
+Pass `--mountpoint` pointing at the already-mounted Drive path (recommended). This lets the UI discover folders from the local filesystem rather than querying the Drive API over the network.
 
-- lists top-level folders in the remote
-- lets you include an entire top-level folder or only selected subfolders
-- writes `~/.config/rclone/gclone-selective-sync.txt`
+**Interface**
 
-After saving, apply the new selection with:
+| Element | What it does |
+|---|---|
+| **Select all folders** checkbox | Checks or clears every top-level folder at once |
+| **▶ / ▼** arrow | Expands a folder to reveal its subfolders |
+| **Folder checkbox** | Includes the entire folder and all its contents |
+| **Subfolder checkboxes** | Includes only those specific subdirectories (folder checkbox must be unchecked) |
+| **all / none** links | Bulk-select or clear subfolders inside an expanded folder |
+| **Search box** | Filters the visible folder list by name |
+| **Save Selection** | Writes `~/.config/rclone/gclone-selective-sync.txt` |
+| **Restart gclone** | Runs `sudo systemctl restart gclone` and shows the result in the terminal |
+| **Show Entire Drive** | Clears the filter file so all folders are visible |
+| **Reload** | Re-reads the filter file and Drive folder list |
+
+**Status pill**
+
+A small indicator above the folder list shows the live service state, refreshing every 4 seconds:
+
+| Colour | Meaning |
+|---|---|
+| Green | Running, up to date |
+| Blue (pulsing) | Downloading or uploading files |
+| Red | Service stopped or failed |
+
+**Command-line status**
 
 ```bash
-sudo systemctl restart gclone
+# Quick one-liner
+systemctl status gclone --no-pager -l | grep -E "Active:|Status:"
+
+# Live log stream
+tail -f ~/.config/rclone/gclone.log
 ```
 
-On large Drives, `--mountpoint` is the recommended mode because the GUI can discover folders directly from the mounted filesystem instead of repeatedly querying the Drive API by path.
+**Flags**
+
+```
+--addr            Listen address (default 127.0.0.1:43123)
+--mountpoint      Path to the mounted Drive (strongly recommended)
+--remote          rclone remote name (default gc:)
+--config          rclone config file (default ~/.config/rclone/rclone.conf)
+--filter-file     Filter file path (default ~/.config/rclone/gclone-selective-sync.txt)
+--restart-command Command run by the Restart button (default: sudo systemctl restart gclone)
+--gclone-bin      Path to the gclone binary (default /usr/local/bin/gclone)
+```
 
 ## Instructions
 
